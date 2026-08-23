@@ -17,6 +17,16 @@ type Task struct {
 var tasks []Task
 
 func main() {
+	for _, arg := range os.Args[1:] {
+		if arg == "-h" || arg == "--h" || arg == "--help" {
+			printHelp()
+			return
+		} else {
+			fmt.Println("Неизвестный аргумент. Используйте --help для справки.")
+			os.Exit(1)
+		}
+	}
+
 	// Начальные данные для демонстрации
 	tasks = []Task{
 		{1, "Setup project", "todo"},
@@ -24,6 +34,22 @@ func main() {
 		{3, "Review", "done"},
 	}
 	menu()
+}
+
+func printHelp() {
+	fmt.Println("Interactive Kanban CLI")
+	fmt.Println()
+	fmt.Println("Использование: go run main.go [флаг]")
+	fmt.Println()
+	fmt.Println("Флаги:")
+	fmt.Println("  -h, --h, --help   Показать эту справку и выйти")
+	fmt.Println()
+	fmt.Println("Без флагов запускается интерактивное меню:")
+	fmt.Println("  1. Создать таску")
+	fmt.Println("  2. Пометить выполненным")
+	fmt.Println("  3. Удалить таску")
+	fmt.Println("  4. Все таски")
+	fmt.Println("  5. Завершить работу программы")
 }
 
 func menu() {
