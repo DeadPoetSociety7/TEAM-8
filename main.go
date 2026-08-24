@@ -247,7 +247,7 @@ func save_tasks() { // сохранения файла
 
 	writer := bufio.NewWriter(file) // пишет в файл
 	for _, t := range tasks {
-		writer.WriteString(fmt.Sprintf("%d;%s;%s\n", t.ID, t.Status, t.Title)) // сохранение и написание внутри файла
+		writer.WriteString(fmt.Sprintf("%d;%s;%s\n", t.ID, t.Title, t.Status)) // сохранение и написание внутри файла
 	}
 	writer.Flush() // полное сохранение файла
 }
