@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const filename = "tasks.txt"
+const filename = "tasks.txt" // оглавления файла
 
 type Task struct {
 	ID     int
@@ -19,21 +19,22 @@ type Task struct {
 var tasks []Task
 
 func main() {
-	if len(os.Args) > 1 {
+	if len(os.Args) > 1 { // проверка на текст в консоли
 		arg := os.Args[1]
-		if arg == "-h" || arg == "--help" {
+		if arg == "-h" || arg == "--help" { // проверка на справку
 			print_help()
-			return
+			os.Exit(0)
+		} else {
+			fmt.Println("Неизвестный аргумент. Используйте --help для справки.") // валидация
+			os.Exit(1)
 		}
-		fmt.Println("Неизвестный аргумент. Используйте --help для справки.")
-		os.Exit(1)
 	}
 
-	load_tasks()
-	menu()
+	load_tasks() // загрузить файл
+	menu()       // запуск бесконечного цикла меню
 }
 
-func print_help() {
+func print_help() { // написания справки
 	fmt.Println("Kanban CLI — консольный менеджер задач в интерактивном режиме.")
 	fmt.Println()
 	fmt.Println("Использование:")
@@ -48,51 +49,51 @@ func print_help() {
 	fmt.Println("  5. Завершить работу       — сохраняет состояние и закрывает программу")
 }
 
-func menu() {
-	scanner := bufio.NewScanner(os.Stdin)
+func menu() { // бесконечный цикл меню
+	scanner := bufio.NewScanner(os.Stdin) // чтения по слогам с валидацией
 	for {
 		print_menu()
-		if !scanner.Scan() {
+		if !scanner.Scan() { // проверка на пустоту
 			break
 		}
-		choice := strings.TrimSpace(scanner.Text())
+		menu_ch := strings.TrimSpace(scanner.Text()) // выбор меню
 
-		switch choice {
+		switch menu_ch {
 		case "1":
 			fmt.Print("Введите название задачи: ")
 			if !scanner.Scan() {
 				continue
 			}
-			title := strings.TrimSpace(scanner.Text())
+			title := strings.TrimSpace(scanner.Text()) // убирать пробелы
 
 			if title == "" {
-				fmt.Println("Error: название не может быть пустым.")
+				fmt.Println("Error: название не может быть пустым.") // валидация на пустое название
 				continue
 			}
 
-			id := max_ID() + 1
+			id := max_ID() + 1 // айдишник считать
 			tasks = append(tasks, Task{ID: id, Title: title, Status: "TODO"})
-			save_tasks()
+			save_tasks() // сохранение в файле
 
 		case "2":
 			fmt.Print("Введите ID задачи для отметки: ")
 			if !scanner.Scan() {
 				continue
 			}
-			id, err := strconv.Atoi(strings.TrimSpace(scanner.Text()))
+			id, err := strconv.Atoi(strings.TrimSpace(scanner.Text())) // перевод в интежеры и валидация на символы
 			if err != nil {
 				fmt.Println("Error: ID должен быть числом.")
 				continue
 			}
 
 			idx := findindexbyID(id)
-			if idx == -1 {
+			if idx == -1 { // валидация на существования айдишника
 				fmt.Printf("Error: задача с ID %d не найдена.\n", id)
 				continue
 			}
 
 			if tasks[idx].Status == "DONE" {
-				fmt.Printf("Error: задача %d уже выполнена.\n", id)
+				fmt.Printf("Error: задача %d уже выполнена.\n", id) // валидация на выполненность задачи
 				continue
 			}
 
@@ -106,32 +107,37 @@ func menu() {
 			}
 			id, err := strconv.Atoi(strings.TrimSpace(scanner.Text()))
 			if err != nil {
-				fmt.Println("Error: ID должен быть числом.")
+				fmt.Println("Error: ID должен быть числом.") // превращения в интежер и валидация на символ
 				continue
 			}
 
 			idx := findindexbyID(id)
 			if idx == -1 {
-				fmt.Printf("Error: задача с ID %d не найдена.\n", id)
+				fmt.Printf("Error: задача с ID %d не найдена.\n", id) // валидация на существования айдишника
 				continue
 			}
 
-			tasks = append(tasks[:idx], tasks[idx+1:]...)
+			tasks = append(tasks[:idx], tasks[idx+1:]...) // аппендится с помощью срезания среза в 2 куска с вырезом
 			save_tasks()
 
 		case "4":
-			print_tasks(tasks)
+			print_tasks(tasks) // таблица
 
 		case "5":
-			os.Exit(0)
+			fmt.Println("программа завершена успешно")
+			os.Exit(0) // успешно
 
 		default:
-			fmt.Println("Неверный ввод. Введите число от 1 до 5.")
+			fmt.Println("Неверный ввод. Введите число от 1 до 5.") // валидация
 		}
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error: неправильно отсканировалось") // валидация обязательная
+		os.Exit(1)
 	}
 }
 
-func print_menu() {
+func print_menu() { // меню
 	fmt.Println("\n=== МЕНЮ ЗАДАЧ ===")
 	fmt.Println("1. Создать таску")
 	fmt.Println("2. Пометить выполненным")
@@ -143,27 +149,27 @@ func print_menu() {
 
 func print_tasks(tasks_list []Task) {
 	if len(tasks_list) == 0 {
-		fmt.Println("Список задач пуст.")
+		fmt.Println("Список задач пуст.") // валидация с проверкой на пустоту
 		return
 	}
 
 	fmt.Println("\n+----+----------------------+-------------+")
 	fmt.Println("| ID | Title                | Status      |")
-	fmt.Println("+----+----------------------+-------------+")
+	fmt.Println("+----+----------------------+-------------+") // таблица
 
 	for _, task := range tasks_list {
-		runes := []rune(task.Title)
+		runes := []rune(task.Title) // руны что бы не ломалось при кириллице
 		display_title := task.Title
 
 		if len(runes) > 20 {
-			display_title = string(runes[:17]) + "..."
+			display_title = string(runes[:17]) + "..." // валидация на длинну сообщения
 			runes = []rune(display_title)
 		}
 
 		spaces_cnt := 20 - len(runes)
 		spaces := ""
 		if spaces_cnt > 0 {
-			spaces = strings.Repeat(" ", spaces_cnt)
+			spaces = strings.Repeat(" ", spaces_cnt) // валидация для пробелов
 		}
 
 		fmt.Printf("| %2d | %s%s | %-11s |\n", task.ID, display_title, spaces, task.Status)
@@ -173,7 +179,7 @@ func print_tasks(tasks_list []Task) {
 
 func max_ID() int {
 	max := 0
-	for _, t := range tasks {
+	for _, t := range tasks { // сохранение максимального айдишника для валидации прошлой
 		if t.ID > max {
 			max = t.ID
 		}
@@ -181,7 +187,7 @@ func max_ID() int {
 	return max
 }
 
-func findindexbyID(id int) int {
+func findindexbyID(id int) int { // нахождения написанного айдишника
 	for i, t := range tasks {
 		if t.ID == id {
 			return i
@@ -190,50 +196,58 @@ func findindexbyID(id int) int {
 	return -1
 }
 
-func load_tasks() {
+func load_tasks() { // загрузка файла
 	file, err := os.Open(filename)
-	if err != nil {
+	if err != nil { // валидация обязательная
 		return
 	}
-	defer file.Close()
+	defer file.Close() // закрыть файл
 
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(file) // сканирование по слогам
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
+		line := strings.TrimSpace(scanner.Text()) // убрать пробелы
+		if line == "" {                           // валидация на пустоту
 			continue
 		}
 
-		parts := strings.Split(line, ";")
+		parts := strings.SplitN(line, ";", 3) // через сепаратор валидация недавно починил
 		if len(parts) != 3 {
 			continue
 		}
 
-		id, err := strconv.Atoi(parts[0])
-		if err != nil {
+		id, err := strconv.Atoi(parts[0]) // перевод в интежер и валидация
+		if err != nil || id <= 0 {
 			continue
 		}
 
-		status := strings.ToUpper(strings.TrimSpace(parts[1]))
+		if findindexbyID(id) != -1 { // валидация на не сущетсвующий айди
+			continue
+		}
+
+		status := strings.ToUpper(strings.TrimSpace(parts[1])) // поставить все капсом
 		if status != "TODO" && status != "DONE" {
 			continue
 		}
 
 		title := strings.TrimSpace(parts[2])
-		tasks = append(tasks, Task{ID: id, Title: title, Status: status})
+		tasks = append(tasks, Task{ID: id, Title: title, Status: status}) // аппендиться думаю понятно
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error: неправильно отсканировалось") // обязательная валидация
+		os.Exit(1)                                        // неуспешно
 	}
 }
 
-func save_tasks() {
-	file, err := os.Create(filename)
+func save_tasks() { // сохранения файла
+	file, err := os.Create(filename) // файлнэйм с валидацией
 	if err != nil {
 		return
 	}
 	defer file.Close()
 
-	writer := bufio.NewWriter(file)
+	writer := bufio.NewWriter(file) // пишет в файл
 	for _, t := range tasks {
-		writer.WriteString(fmt.Sprintf("%d;%s;%s\n", t.ID, t.Status, t.Title))
+		writer.WriteString(fmt.Sprintf("%d;%s;%s\n", t.ID, t.Status, t.Title)) // сохранение и написание внутри файла
 	}
-	writer.Flush()
+	writer.Flush() // полное сохранение файла
 }
