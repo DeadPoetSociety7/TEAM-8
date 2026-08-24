@@ -1,11 +1,7 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
-	"os"
-	"strconv"
-	"strings"
+	
 )
 
 type Task struct {
@@ -16,137 +12,73 @@ type Task struct {
 
 var tasks []Task
 
+const filename = "tasks.txt"
+
 func main() {
-	for _, arg := range os.Args[1:] {
-		if arg == "-h" || arg == "--h" || arg == "--help" {
-			printHelp()
-			return
-		} else {
+	// Проверяем аргументы командной строки
+	if len(os.Args) > 1 {
+		for _, arg := range os.Args[1:] {
+			if arg == "-h" || arg == "--help" {
+				printHelp()
+				return
+			}
+
 			fmt.Println("Неизвестный аргумент. Используйте --help для справки.")
-			os.Exit(1)
+			return
 		}
 	}
 
-	// Начальные данные для демонстрации
-	tasks = []Task{
-		{1, "Setup project", "todo"},
-		{2, "Write code", "inprogress"},
-		{3, "Review", "done"},
-	}
+	// Загружаем задачи из файла
+	loadTasks()
+
+	// Запускаем меню
 	menu()
 }
 
 func printHelp() {
-	fmt.Println("Interactive Kanban CLI")
+	fmt.Println("Kanban CLI — консольный менеджер задач в интерактивном режиме.")
 	fmt.Println()
-	fmt.Println("Использование: go run main.go [флаг]")
+	fmt.Println("Использование:")
+	fmt.Println("  go run main.go         Запуск интерактивного меню")
+	fmt.Println("  go run main.go --help  Показать эту справку")
 	fmt.Println()
-	fmt.Println("Флаги:")
-	fmt.Println("  -h, --h, --help   Показать эту справку и выйти")
-	fmt.Println()
-	fmt.Println("Без флагов запускается интерактивное меню:")
-	fmt.Println("  1. Создать таску")
-	fmt.Println("  2. Пометить выполненным")
-	fmt.Println("  3. Удалить таску")
-	fmt.Println("  4. Все таски")
-	fmt.Println("  5. Завершить работу программы")
+	fmt.Println("Доступные команды в меню:")
+	fmt.Println("  1. Создать таску          — запрашивает название и добавляет новую задачу (TODO)")
+	fmt.Println("  2. Пометить выполненным   — переводит задачу по ID в статус DONE")
+	fmt.Println("  3. Удалить таску          — удаляет задачу из списка по ID")
+	fmt.Println("  4. Все таски              — выводит текущую доску задач")
+	fmt.Println("  5. Завершить работу       — сохраняет состояние и закрывает программу")
 }
 
 func menu() {
 	scanner := bufio.NewScanner(os.Stdin)
-	runMenu(scanner)
-}
 
-func runMenu(scanner *bufio.Scanner) {
 	for {
 		printMenu()
+
 		if !scanner.Scan() {
-			break
+			return
 		}
+
 		choice := strings.TrimSpace(scanner.Text())
 
 		switch choice {
 		case "1":
-			fmt.Print("Введите название задачи: ")
-			if !scanner.Scan() {
-				continue
-			}
-			title := strings.TrimSpace(scanner.Text())
-
-			// Валидация: название не должно быть пустым
-			if title == "" {
-				fmt.Println("Ошибка: Название задачи не может быть пустым!")
-				continue
-			}
-
-			id := len(tasks) + 1
-			tasks = append(tasks, Task{id, title, "todo"})
-			fmt.Println("Задача успешно создана.")
+			createTask(scanner)
 
 		case "2":
-			fmt.Print("Введите ID задачи для отметки: ")
-			if !scanner.Scan() {
-				continue
-			}
-			input := strings.TrimSpace(scanner.Text())
-
-			// Валидация: перевод строки в число
-			id, err := strconv.Atoi(input)
-			if err != nil {
-				fmt.Println("Ошибка: ID должен быть числом!")
-				continue
-			}
-
-			found := false
-			for i := range tasks {
-				if tasks[i].ID == id {
-					tasks[i].Status = "done"
-					fmt.Println("Задача отмечена как выполненная.")
-					found = true
-					break
-				}
-			}
-
-			// Валидация: проверка, найден ли ID в списке
-			if !found {
-				fmt.Printf("Ошибка: Задача с ID %d не найдена.\n", id)
-			}
+			markDone(scanner)
 
 		case "3":
-			fmt.Print("Введите ID задачи для удаления: ")
-			if !scanner.Scan() {
-				continue
-			}
-			input := strings.TrimSpace(scanner.Text())
-
-			// Валидация: перевод строки в число
-			id, err := strconv.Atoi(input)
-			if err != nil {
-				fmt.Println("Ошибка: ID должен быть числом!")
-				continue
-			}
-
-			found := false
-			for i := range tasks {
-				if tasks[i].ID == id {
-					tasks = append(tasks[:i], tasks[i+1:]...)
-					fmt.Println("Задача успешно удалена.")
-					found = true
-					break
-				}
-			}
-
-			// Валидация: проверка, найден ли ID в списке
-			if !found {
-				fmt.Printf("Ошибка: Задача с ID %d не найдена.\n", id)
-			}
+			deleteTask(scanner)
 
 		case "4":
 			printTasks(tasks)
 
 		case "5":
+			saveTasks()
 			fmt.Println("Программа завершена.")
-			os.Exit(0)
+			return
 
 		default:
 			fmt.Println("Неверный ввод. Введите число от 1 до 5.")
@@ -155,45 +87,237 @@ func runMenu(scanner *bufio.Scanner) {
 }
 
 func printMenu() {
-	fmt.Println("\n== МЕНЮ ЗАДАЧ ==")
+	fmt.Println()
+	fmt.Println("=== МЕНЮ ЗАДАЧ ===")
 	fmt.Println("1. Создать таску")
 	fmt.Println("2. Пометить выполненным")
 	fmt.Println("3. Удалить таску")
 	fmt.Println("4. Все таски")
 	fmt.Println("5. Завершить работу программы")
-	fmt.Print("Выберите действие: ")
+	fmt.Print("Выберите действие (1-5): ")
+}
+
+func createTask(scanner *bufio.Scanner) {
+	fmt.Print("Введите название задачи: ")
+
+	if !scanner.Scan() {
+		return
+	}
+
+	title := strings.TrimSpace(scanner.Text())
+
+	if title == "" {
+		fmt.Println("Error: название не может быть пустым.")
+		return
+	}
+
+	id := maxID() + 1
+
+	tasks = append(tasks, Task{
+		ID:     id,
+		Title:  title,
+		Status: "TODO",
+	})
+
+	saveTasks()
+
+	fmt.Println("Задача успешно создана.")
+}
+
+func markDone(scanner *bufio.Scanner) {
+	fmt.Print("Введите ID задачи: ")
+
+	if !scanner.Scan() {
+		return
+	}
+
+	input := strings.TrimSpace(scanner.Text())
+
+	id, err := strconv.Atoi(input)
+
+	if err != nil {
+		fmt.Println("Error: ID должен быть числом.")
+		return
+	}
+
+	index := findIndexByID(id)
+
+	if index == -1 {
+		fmt.Printf("Error: задача с ID %d не найдена.\n", id)
+		return
+	}
+
+	if tasks[index].Status == "DONE" {
+		fmt.Printf("Error: задача %d уже выполнена.\n", id)
+		return
+	}
+
+	tasks[index].Status = "DONE"
+
+	saveTasks()
+
+	fmt.Println("Задача отмечена как выполненная.")
+}
+
+func deleteTask(scanner *bufio.Scanner) {
+	fmt.Print("Введите ID задачи: ")
+
+	if !scanner.Scan() {
+		return
+	}
+
+	input := strings.TrimSpace(scanner.Text())
+
+	id, err := strconv.Atoi(input)
+
+	if err != nil {
+		fmt.Println("Error: ID должен быть числом.")
+		return
+	}
+
+	index := findIndexByID(id)
+
+	if index == -1 {
+		fmt.Printf("Error: задача с ID %d не найдена.\n", id)
+		return
+	}
+
+	tasks = append(tasks[:index], tasks[index+1:]...)
+
+	saveTasks()
+
+	fmt.Println("Задача успешно удалена.")
 }
 
 func printTasks(tasksList []Task) {
 	if len(tasksList) == 0 {
-		fmt.Println("\nСписок задач пуст.")
+		fmt.Println("Список задач пуст.")
 		return
 	}
 
-	fmt.Println("\n+----+----------------------+-------------+")
+	fmt.Println()
+	fmt.Println("+----+----------------------+-------------+")
 	fmt.Println("| ID | Title                | Status      |")
 	fmt.Println("+----+----------------------+-------------+")
 
 	for _, task := range tasksList {
-		// Преобразуем в срез рун для корректной работы с русскими буквами
-		runes := []rune(task.Title)
-		displayTitle := task.Title
+		title := task.Title
 
-		// Ограничиваем длину заголовка до 20 видимых символов
+		runes := []rune(title)
+
 		if len(runes) > 20 {
-			displayTitle = string(runes[:17]) + "..."
-			runes = []rune(displayTitle)
+			title = string(runes[:17]) + "..."
+			runes = []rune(title)
 		}
 
-		// Вычисляем, сколько пробелов нужно добавить для выравнивания (всего 20 мест)
-		spacesCount := 20 - len(runes)
-		spaces := ""
-		if spacesCount > 0 {
-			spaces = strings.Repeat(" ", spacesCount)
+		spaces := 20 - len(runes)
+
+		if spaces < 0 {
+			spaces = 0
 		}
 
-		// Форматируем статус (он на английском, тут стандартные 11 мест)
-		fmt.Printf("| %2d | %s%s | %-11s |\n", task.ID, displayTitle, spaces, task.Status)
+		fmt.Printf(
+			"| %2d | %s%s | %-11s |\n",
+			task.ID,
+			title,
+			strings.Repeat(" ", spaces),
+			task.Status,
+		)
 	}
+
 	fmt.Println("+----+----------------------+-------------+")
 }
+
+func maxID() int {
+	max := 0
+
+	for _, task := range tasks {
+		if task.ID > max {
+			max = task.ID
+		}
+	}
+
+	return max
+}
+
+func findIndexByID(id int) int {
+	for i, task := range tasks {
+		if task.ID == id {
+			return i
+		}
+	}
+
+	return -1
+}
+
+func loadTasks() {
+	file, err := os.Open(filename)
+
+	if err != nil {
+		return
+	}
+
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		if line == "" {
+			continue
+		}
+
+		parts := strings.SplitN(line, ";", 3)
+
+		if len(parts) != 3 {
+			continue
+		}
+
+		id, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+
+		if err != nil {
+			continue
+		}
+
+		status := strings.ToUpper(strings.TrimSpace(parts[1]))
+
+		if status != "TODO" && status != "DONE" {
+			continue
+		}
+
+		title := strings.TrimSpace(parts[2])
+
+		tasks = append(tasks, Task{
+			ID:     id,
+			Title:  title,
+			Status: status,
+		})
+	}
+}
+
+func saveTasks() {
+	file, err := os.Create(filename)
+
+	if err != nil {
+		fmt.Println("Error: не удалось сохранить задачи.")
+		return
+	}
+
+	defer file.Close()
+
+	writer := bufio.NewWriter(file)
+
+	for _, task := range tasks {
+		writer.WriteString(
+			fmt.Sprintf(
+				"%d;%s;%s\n",
+				task.ID,
+				task.Status,
+				task.Title,
+			),
+		)
+	}
+
+	writer.Flush()
+}     

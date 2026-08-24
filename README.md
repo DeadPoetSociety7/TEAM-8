@@ -3,10 +3,6 @@ Interactive Kanban CLI
 
 A lightweight, interactive command-line Kanban board built entirely with Go's standard library. This application allows teams and individuals to manage tasks directly from the terminal, keeping data persistent across runs. 
 
-Features:
-Interactive Menu: Easily create, update, delete, and view tasks. 
-
-
 Progress Tracking: Tasks move through three sequential statuses: todo ➔ inprogress ➔ done. 
 
 
@@ -23,8 +19,7 @@ Requirements
 Go 1.16 or higher 
 
 
-Only standard Go library packages used (no external dependencies) 
-
+"bufio","fmt","os","strconv","strings"libraries used
 
 How to Run
 Interactive Menu
@@ -54,14 +49,9 @@ Delete Task: Removes a task permanently from the system by its ID.
 All Tasks: Displays a beautifully formatted board with all tasks. 
 
 
-Filter by Status: Allows viewing only tasks matching a specific status (todo, inprogress, or done). 
-
-
 Edit Title: Renames an existing task title by its ID. 
 
-
 Exit: Safely terminates the program execution. 
-
 
 Storage Format
 All tasks are persisted in the root directory inside tasks.txt. The data is structured using a semicolon-separated line format: 
